@@ -1,18 +1,29 @@
-// App.js
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView } from 'react-native';
+
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, ScrollView, Animated, Vibration } from 'react-native';
 import { Entypo, FontAwesome, Feather } from '@expo/vector-icons';
 
 export default function App() {
   const [selectedTab, setSelectedTab] = useState('Products');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [cartQuantity, setCartQuantity] = useState(1);
-  const [cartItems, setCartItems] = useState([]); // To manage the cart items
-  const [isCartVisible, setIsCartVisible] = useState(false); // To control cart visibility
+  const [cartItems, setCartItems] = useState([]);
+  const [isCartVisible, setIsCartVisible] = useState(false);
+
+  //  cart notification
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
 
   const handleAddToCart = () => {
-    // Add the product with its quantity to the cartItems
     setCartItems(prevItems => [...prevItems, { name: 'Product Name', quantity: cartQuantity }]);
+    Vibration.vibrate(); 
+
+    // shake animation
+    Animated.sequence([
+      Animated.timing(shakeAnimation, { toValue: 1, duration: 100, useNativeDriver: true }),
+      Animated.timing(shakeAnimation, { toValue: -1, duration: 100, useNativeDriver: true }),
+      Animated.timing(shakeAnimation, { toValue: 0, duration: 100, useNativeDriver: true }),
+    ]).start();
+
     alert(`Added ${cartQuantity} item(s) to the cart!`);
   };
 
@@ -20,7 +31,7 @@ export default function App() {
     setIsCartVisible(!isCartVisible);
   };
 
-  const totalAmount = cartItems.reduce((total, item) => total + 150 * item.quantity, 0); // Assuming each item costs $150
+  const totalAmount = cartItems.reduce((total, item) => total + 150 * item.quantity, 0);
 
   const renderContent = () => {
     switch (selectedTab) {
@@ -28,7 +39,7 @@ export default function App() {
         return (
           <View style={styles.productContainer}>
             <Image
-              source={require('./assets/Frame 53.png')} // Replace with your actual image link
+              source={require('./assets/Frame 53.png')}
               style={styles.productImage}
             />
             <Text style={styles.productName}>Product Name</Text>
@@ -39,20 +50,23 @@ export default function App() {
               <FontAwesome name="star" size={20} color="#FFD700" />
               <FontAwesome name="star-half-o" size={20} color="#FFD700" />
             </View>
-            <Text style={styles.price}>$150 <Text style={styles.discount}>$200</Text></Text>
+            <Text style={styles.price}>150 EGP <Text style={styles.discount}>200 EGP</Text></Text>
             <Text style={styles.productInfo}>This is a detailed description of the product.</Text>
             <View style={styles.buyNowContainer}>
-              <TouchableOpacity style={styles.buyNowButton} onPress={handleAddToCart}>
-                <Text style={styles.buttonText}>Buy Now</Text>
-              </TouchableOpacity>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity onPress={() => setCartQuantity(Math.max(1, cartQuantity - 1))}>
+              
+            <TouchableOpacity onPress={() => setCartQuantity(Math.max(1, cartQuantity - 1))}>
                   <Text style={styles.quantityButton}>-</Text>
                 </TouchableOpacity>
                 <Text style={styles.quantityText}>{cartQuantity}</Text>
                 <TouchableOpacity onPress={() => setCartQuantity(cartQuantity + 1)}>
                   <Text style={styles.quantityButton}>+</Text>
                 </TouchableOpacity>
+                
+              <TouchableOpacity style={styles.buyNowButton} onPress={handleAddToCart}>
+                <Text style={styles.buttonText}>Buy Now</Text>
+              </TouchableOpacity>
+              <View style={styles.quantityContainer}>
+                
               </View>
             </View>
             <View style={styles.shareContainer}>
@@ -66,10 +80,10 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            {/* Additional Product */}
+            
             <View style={styles.additionalProductContainer}>
               <Image
-                source={require('./assets/image1.png')} // Replace with your actual image link
+                source={require('./assets/image1.png')}
                 style={styles.additionalProductImage}
               />
               <Text style={styles.additionalProductName}>10688</Text>
@@ -112,21 +126,35 @@ export default function App() {
         </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Image
-            source={require('./assets/logo.png')} // Replace with your actual logo link
+            source={require('./assets/logo.png')}
             style={styles.logoImage}
           />
         </View>
         <View style={styles.iconsContainer}>
           <Feather name="user" size={24} style={styles.icon} />
           <TouchableOpacity onPress={handleCartToggle}>
-            <View style={styles.cartIconContainer}>
+            <Animated.View
+              style={[
+                styles.cartIconContainer,
+                {
+                  transform: [
+                    {
+                      translateX: shakeAnimation.interpolate({
+                        inputRange: [-1, 1],
+                        outputRange: [-5, 5],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
               <Feather name="shopping-cart" size={24} style={styles.icon} />
               {cartItems.length > 0 && (
                 <View style={styles.notification}>
                   <Text style={styles.notificationText}>{cartItems.length}</Text>
                 </View>
               )}
-            </View>
+            </Animated.View>
           </TouchableOpacity>
           <Feather name="search" size={24} style={styles.icon} />
         </View>
@@ -186,14 +214,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#f8f8f8',
-    elevation: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   drawerToggle: {
-    position: 'absolute',
-    left: 0,
-    padding: 10,
+    padding: 5,
   },
   logoContainer: {
     flex: 1,
@@ -202,123 +230,126 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 100,
     height: 50,
+    resizeMode: 'contain',
   },
   iconsContainer: {
     flexDirection: 'row',
   },
   icon: {
-    marginHorizontal: 10,
+    marginLeft: 20,
   },
   scrollView: {
-    flex: 1,
+    padding: 10,
   },
   productContainer: {
-    padding: 20,
-    alignItems: 'center',
+    padding: 10,
   },
   productImage: {
-    width: 200,
+    width: '100%',
     height: 200,
-    borderRadius: 10,
-    marginBottom: 15,
+    resizeMode: 'contain',
   },
   productName: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginVertical: 10,
   },
   ratingContainer: {
     flexDirection: 'row',
-    marginBottom: 5,
+    marginBottom: 10,
   },
   price: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
   },
   discount: {
     textDecorationLine: 'line-through',
-    color: 'gray',
+    color: '#999',
+    marginLeft: 5,
   },
   productInfo: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 15,
+    fontSize: 16,
+    color: '#666',
+    marginVertical: 10,
   },
   buyNowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    
   },
   buyNowButton: {
     backgroundColor: 'black',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 60,
     borderRadius: 5,
-    marginRight: 10,
+    marginLeft: 30,
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row', 
+  alignItems: 'center', 
+  backgroundColor: '#f0f0f0', 
+  borderRadius: 5, 
+  padding: 5,
   },
   quantityButton: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    marginHorizontal: 5,
+    fontSize: 20,
+  marginHorizontal: 10,
   },
   quantityText: {
-    fontSize: 16,
+    fontSize: 18,
+    marginHorizontal: 10,
   },
   shareContainer: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginVertical: 10,
   },
   iconButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 10,
+    marginRight: 20,
   },
   iconText: {
     marginLeft: 5,
+    fontSize: 16,
+    color: '#666',
   },
   additionalProductContainer: {
-    padding: 20,
-    alignItems: 'center',
     marginTop: 20,
-    borderColor: '#ccc',
+    padding: 10,
+    borderColor: '#ddd',
+    borderRadius: 10,
   },
   additionalProductImage: {
-    width: 150,
-    height: 150,
-    borderWidth: 1,
-
-    borderRadius: 10,
-    marginBottom: 15,
+    marginTop: 50,
+marginRight: 240,
+    width: 250,
+    height: 250,
+    resizeMode: 'contain',
   },
   additionalProductName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginVertical: 5,
   },
   additionalRatingContainer: {
     flexDirection: 'row',
     marginBottom: 5,
   },
   additionalPrice: {
-    fontSize: 14,
+    fontSize: 16,
+    color: 'red',
     fontWeight: 'bold',
   },
-  additionalDiscount: {
-    textDecorationLine: 'line-through',
-    color: 'gray',
-  },
   additionalProductInfo: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 10,
+    fontSize: 14,
+    color: '#666',
+    marginVertical: 5,
   },
   additionalBuyNowContainer: {
     flexDirection: 'row',
@@ -327,22 +358,39 @@ const styles = StyleSheet.create({
   },
   additionalBuyNowButton: {
     backgroundColor: 'black',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 5,
     marginRight: 10,
   },
   drawer: {
     position: 'absolute',
-    top: 0,
+    top: 80, // تغيير هذا لتخفيض الـ Drawer تحت Navbar
     left: 0,
     width: 200,
     backgroundColor: '#fff',
-    elevation: 4,
+    borderRightWidth: 1,
+    borderRightColor: '#ddd',
+    padding: 10,
+    zIndex: 999,
+    height: 'auto', 
+    borderTopRightRadius: 10, 
+    borderBottomRightRadius: 10,
+    shadowColor: '#000', 
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   drawerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
+    paddingVertical: 15, 
+    paddingHorizontal: 10, 
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
   },
   drawerIcon: {
     marginRight: 10,
@@ -350,42 +398,73 @@ const styles = StyleSheet.create({
   drawerText: {
     fontSize: 16,
   },
+
   cartDropdown: {
     position: 'absolute',
-    top: 60,
+    top: 70,
     right: 10,
+    width: 250, 
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 10,
-    elevation: 4,
-  },
-  cartItem: {
-    padding: 5,
+    borderColor: '#ddd',
+    borderRadius: 10, 
+    padding: 15, 
+    zIndex: 999,
+    shadowColor: '#000', 
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   emptyCartText: {
     textAlign: 'center',
-    color: 'gray',
+    fontSize: 16,
+    color: '#999',
+    marginVertical: 10, 
+  },
+  cartItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,  
+    paddingHorizontal: 5, 
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee', 
   },
   totalText: {
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 15, 
+  },
+  totalLabel: {
+    
+    color: '#333', 
+  },
+  totalAmount: {
+    
+    color: '#000', 
+  },
+  cartIconContainer: {
+    position: 'relative',
   },
   notification: {
     position: 'absolute',
-    right: -5,
     top: -5,
+    right: -10,
     backgroundColor: 'red',
-    borderRadius: 20,
-    
-    padding: 5,
-    minWidth: 2,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   notificationText: {
-    color: 'white',
+    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
